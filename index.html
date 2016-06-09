@@ -1,18 +1,387 @@
+//Start of page
 <html>
+    
 	<head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<script src="js/mail-generator.js"></script>
-		<link href="css/style.css" rel="stylesheet" media="screen">
-    <script>
-      window.onload = function(){
-        // ALL OF YOUR JAVASCRIPT CODE SHOULD GO HERE. 
-        // We have to use window.onload so your JavaScript doesn't execute until the page has loaded and all HTML has been downloaded to your browser
-        // Hello!
-      };
-    </script>
+        <link href="css/style.css" rel="stylesheet" media="screen">
+        <link rel='stylesheet' href='fonts/sourcesanspro-bold/stylesheet.css' />
+        <link rel='stylesheet' href='fonts/sourcesanspro-light/stylesheet.css' />
+        <script src='js/jquery.min.js'></script>
+        <script>
+            window.onload = function(){
+            // ALL OF YOUR JAVASCRIPT CODE SHOULD GO HERE. 
+            // We have to use window.onload so your JavaScript doesn't execute until 
+            // the page has loaded and all HTML has been downloaded to your browser
+                
+                
+                //spacing to see behind header
+                var header_h = $('header').outerHeight();
+                $('.container')     .css('margin-top',  header_h*2);
+                $('.hidden_menu')   .css('padding-top', header_h+20);
+                
+                //set up elements to be out of range for animation
+                var screen_w = $(document).outerWidth();
+                var menu_animation_end = 0;
+                $('header')         .css('top',     0-header_h);
+                $('.menu_toggle')   .css('right',   0-screen_w);
+                $('.title')         .css('right',   0-screen_w*1.5);
+                $('.location')      .css('right',   0-screen_w*2);
+                $('.hidden_menu')   .css('left',    0-screen_w*2.5);
+                
+                //loading animations in sequence
+                $('header')         .animate({top: "0px"},      400);
+                $('.menu_toggle')   .animate({right: "0px"},    800);
+                $('.title')         .animate({right: "0px"},    1200);
+                $('.location')      .animate({right: "0px"},    1600);
+                $('.hidden_menu')   .animate({left: "-245px"},  1800, 
+                                             function() {markEnd()});
+                                            //only allow menu toggle
+                                            //when animation ends
+                
+                //load after previous animation ends
+                function markEnd() { 
+                    menu_animation_end = 1; 
+                    arr_out();
+                }
+                
+                //output first 10 messages
+                var msg_num = window.geemails.length;
+                var arr_loc = 0; //array location
+                var arr_timer = null;
+                function arr_out() {
+                    $('<div>').prependTo('.newest').addClass('newer');
+                    var obj = window.geemails[arr_loc];
+                    display_data(obj);
+                    $('.newer').slideDown();
+                    $('.newer').removeClass();
+                    arr_loc = arr_loc + 1;
+                    if (arr_loc == msg_num) {
+                        clearTimeout(arr_timer);
+                        setInterval(show_buttons, 500);
+                    }
+                    arr_timer = setTimeout(arr_out, 500);
+                }
+                
+                //show refresh button
+                function show_buttons() {
+                    $('.buttons div').slideDown().css("display", "inline-block");
+                    $('.newer').remove();
+                }
+                
+                //randomly generate new messages
+                function new_out() {
+                    $('<div>').prependTo('.newest').addClass('newer');
+                    var obj = getNewMessage();
+                    display_data(obj);
+                    $('.newer').slideDown();
+                    $('.newer').removeClass();
+                    arr_loc = arr_loc + 1;
+                }
+                
+                //run new_out() when press refresh button
+                var refresh = 0;
+                var new_timer;
+                $('#refresh').live('click', function () {
+                    if(refresh == 0) {
+                        refresh = 1;
+                        $('#refresh').text("Stop");
+                        deleter = 0;
+                        $('#delete').css('background-color', 'gray');
+                        new_timer = setInterval(new_out, 1500);
+                    } else {
+                        refresh = 0;
+                        $('#refresh').text("Refresh");
+                        deleter = 1;
+                        $('#delete').css('background-color', 'red');
+                        clearInterval(new_timer);
+                    }
+                });
+                
+                //post selection
+                var selecting = 0;
+                $('.content').live('click', function() {
+                    $(this).parent().toggleClass('selected');
+                    $(this).toggleClass('selecting');
+                    if($(this).hasClass('selecting')) {
+                        selecting = selecting + 1;
+                    } else {
+                        selecting = selecting - 1;
+                    }
+                    
+                });
+                
+                //delete button functions
+                var deleter = 1;
+                $('#delete').click(function() {
+                    if(deleter == 1) {
+                        $('.selected').slideUp();
+                        minus_total();
+                        selecting = 0;
+                    }
+                });
+
+                //.hidden_menu toggle
+                var menu_toggle_status = 0; //use status for confirmation
+                $('.menu_toggle').click(function() {
+                    if(menu_toggle_status==0 && menu_animation_end==1){
+                        $('.hidden_menu').animate({left: "0px"}, 200);
+                        $('#menu_toggle').text("Close");
+                        menu_toggle_status = 1;
+                    }else{
+                        $('.hidden_menu').animate({left: "-245"}, 200);
+                        $('#menu_toggle').text("Menu");
+                        menu_toggle_status = 0;
+                    }
+                });
+
+                //initialize .hidden_menu status
+                var profile_menu_status = 0;
+                var mailbox_menu_status = 0;
+                $('.profile_menu').slideUp();
+                $('.mailbox_menu').slideUp();
+
+                //.hidden_menu actions
+                $('.profile').click(function() {
+                    if(profile_menu_status == 0){
+                        $('.profile_menu').slideDown();
+                        $('#m1').text("(collapse)");
+                        profile_menu_status = 1;
+                    }else{
+                        $('.profile_menu').slideUp();
+                        $('#m1').text("(expand)");
+                        profile_menu_status = 0;
+                    }
+                });
+                $('.mailbox').click(function() {
+                    if(mailbox_menu_status == 0){
+                        $('.mailbox_menu').slideDown();
+                        $('#m2').text("(collapse)");
+                        mailbox_menu_status = 1;
+                    }else{
+                        $('.mailbox_menu').slideUp();
+                        $('#m2').text("(expand)");
+                        mailbox_menu_status = 0;
+                    }
+                });
+
+                //hide .hidden_menu if click outside
+                $(document).click(function(event) {
+                    if(!$(event.target).closest('.hidden_menu, #menu_toggle').length) {
+                        $('.hidden_menu').animate({
+                            left: "-245"
+                        }, 200);
+                        $('#menu_toggle').text("Menu");
+                        menu_toggle_status = 0;
+                    }
+                })
+                
+                //posts actions, $(this).next() is $('.content')
+                $('.info').live('click', function() { //use .live() for dynamic content
+                    $(this).parent().find('.unread_indi').css('display', 'none');
+                    if($(this).next().is(':visible')){
+                        $(this).next().slideUp();
+                    }else{
+                        $(this).next().slideDown();
+                    }
+                    if($(this).parent().hasClass('was_selected') != true) {
+                        $(this).parent().addClass('was_selected');
+                        minus_count();
+                    }
+                });
+                
+                //code for adding unread and total email count
+                function add_count() {
+                    var counter;
+                    var ccalc;
+                    counter = $('.count').text();
+                    ccalc = parseInt(counter);
+                    ccalc = ccalc + 1;
+                    $('.count').text(ccalc.toString());
+                    
+                    var totaler;
+                    var tcalc;
+                    totaler = $('.total_num').text();
+                    tcalc = parseInt(totaler);
+                    tcalc = tcalc + 1;
+                    $('.total_num').text(tcalc.toString());
+                }
+                
+                //code for minusing unread count
+                function minus_count() {
+                    var counter;
+                    var ccalc;
+                    counter = $('.count').text();
+                    ccalc = parseInt(counter);
+                    ccalc = ccalc - 1;
+                    $('.count').text(ccalc.toString());
+                }
+                
+                //code for minusing total count
+                function minus_total() {
+                    var counter;
+                    var mtcalc;
+                    counter = $('.total_num').text();
+                    mtcalc = parseInt(counter);
+                    mtcalc = mtcalc - selecting;
+                    $('.total_num').text(mtcalc.toString());
+                }
+                
+                /*
+                    -----
+                    -----
+                    -----
+                    Below are the code used to extract data from mail-generator.js
+                    and dynamically display the content.
+                    Comment block created for visibility for location of code.
+                    -----
+                    -----
+                    -----
+                */
+                
+                //match value to position in an array
+                function matcher(v, arr) {
+                    var position;
+                    for (var i = 0; i < arr.length; i++) { 
+                    //I can't believe mispelling "arr" as "array" stops output completely
+                        if (v == arr[i]) {
+                            position = i;
+                            break;
+                        }
+                    }
+                    return position;
+                }
+                
+                //change month from int to str
+                function return_month(month) {
+                    var num_array = [0,1,2,3,4,5,6,7,8,9,10,11];
+                    var str_array = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                    var position = matcher(month, num_array);
+                    return str_array[position];
+                }
+                
+                //fix minute values below 10 for aesthetics
+                function min_fix(min) {
+                    var min_str;
+                    if(min>=0 && min<=9) {
+                        min_str = "0" + min.toString();
+                    } else {
+                        min_str = min.toString();
+                    }
+                    return min_str;
+                }
+                
+                //generate str for date
+                function date_string(date) {
+                    return return_month(date.getMonth()) + " " + date.getDate() + ", " + date.getFullYear() + " " + date.getHours() + ":" + min_fix(date.getMinutes()) + " p.m.";
+                }
+                
+                //output format for posts
+                function display_data(object) {
+                    var new_subject = object.subject;
+                    var new_sender = object.sender;
+                    var new_date = object.date; //this is a date object
+                    var new_message = object.body;
+                    var new_str_date = date_string(new_date);
+                    $('.newer').html("<div class='post'><div class='info'><table><tr><td><b>Subject: </b></td><td class='t_space'></td><td class='ul'>" + new_subject + "</td><td class='unread_indi'>*</td></tr><tr><td><b>Sender: </b></td><td class='t_space'></td><td class='ul'>" + new_sender + "</td></tr><tr><td><b>Date: </b></td><td class='t_space'></td><td class='ul'>" + new_str_date + "</td></tr></table></div><div class='content'><div class='content_spacer'></div><div class='message'>" + new_message + "</div></div></div>"); 
+                    add_count();
+                }
+            };
+            
+            /*
+                -----
+                -----
+                -----
+                Javascript ends here, entering html territory.
+                Comment block created for visibility for location of code.
+                -----
+                -----
+                -----
+            */
+            
+        </script>
 	</head>
+    
 	<body>
-		<div class="container" id="main">
-			Build Me!
-		</div>
+        
+        <header>
+            <div class='header_content'>
+                <a class='menu_toggle' id="menu_toggle">Menu</a>
+                <div class='header_divider'></div>
+                <a class='title'>Gee-mail</a>
+                <div class='header_divider'></div>
+                <div class='location'>
+                    <div><a>> &nbsp Inbox</a></div>
+                    <div>(</div>
+                    <div class='count'>0</div>
+                    <div>)</div>
+                </div>
+            </div>
+        </header>
+        
+        <div class='hidden_menu'>
+            <div class='menu_container'>
+                <p><a class='profile'>Edward Gao &nbsp <i id='m1'>(expand)</i></a></p>
+                <ul class='profile_menu'>
+                    <li>Edit Profile</li>
+                    <li>Change Password</li>
+                    <li>Customization</li>
+                </ul>
+                <p><a class='mailbox'>Mailbox &nbsp <i id='m2'>(expand)</i></a></p>
+                <ul class='mailbox_menu'>
+                    <li>Inbox</li>
+                    <li>Archived</li>
+                    <li>Important</li>
+                    <li>Outbox</li>
+                    <li>Spam</li>
+                    <li>Trash</li>
+                </ul>
+                <p><a class='phone_book'>Phone Book</a></p>
+                <p><a class='calendar'>Calendar</a></p>
+                <p><a class='feedback'>Feedback</a></p>
+                <p><a class='about'>About</a></p>
+            </div>
+        </div>
+        
+		<div class='container' id='main'>
+            <div class='buttons'>
+                <div id='refresh'>Refresh</div>
+                <div id='delete'>Delete</div>
+                <div id='total'>Total: <a class='total_num'>0</a></div>
+            </div>
+            <div class='newest'></div>
+            <!--
+            Post format example for reference
+            <div class='post'>
+                <div class='info'>
+                    <table>
+                        <tr>
+                            <td><b>Subject: </b></td>
+                            <td class='t_space'></td>
+                            <td class='ul'>Test Subject</td>
+                            <td class='unread_indi'>*</td>
+                        </tr>
+                        <tr>
+                            <td><b>Sender: </b></td>
+                            <td class='t_space'></td>
+                            <td class='ul'>Test Sender</td>
+                        </tr>
+                        <tr>
+                            <td><b>Date: </b></td>
+                            <td class='t_space'></td>
+                            <td class='ul'>Test Date</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class='content'>
+                    <div class='content_spacer'></div>
+                    <div class='message'>
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                    </div>
+                </div>
+            </div>
+            -->
+        </div>
 	</body>
+
 </html>
